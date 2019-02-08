@@ -1,4 +1,4 @@
-CONFIG_LOCALVERSION="-Direwolf-v7.2-Unified"
+CONFIG_LOCALVERSION="-Direwolf-v7.3-Unified"
 # CONFIG_LOCALVERSION_AUTO is not set
 CONFIG_DEFAULT_HOSTNAME="(none)"
 
