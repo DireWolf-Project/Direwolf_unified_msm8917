@@ -1608,7 +1608,6 @@ iso_stream_schedule (
 	if (unlikely(!empty && start < period)) {
 
 		ehci_dbg(ehci, "request %p would overflow (%u-%u < %u mod %u)\n",
-
 				urb, stream->next_uframe, base, period, mod);
 		status = -EFBIG;
 		goto fail;

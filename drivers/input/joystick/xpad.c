@@ -589,13 +589,9 @@ struct usb_xpad {
 
 	int mapping;			/* map d-pad to buttons or to axes */
 	int xtype;			/* type of xbox device */
-
 	int pad_nr;			/* the order x360 pads were attached */
-
 	const char *name;		/* name of the device */
-
 	struct work_struct work;	/* init/remove device from callback */
-
 };
 
 static int xpad_init_input(struct usb_xpad *xpad);
@@ -800,14 +796,12 @@ static void xpad360w_process_packet(struct usb_xpad *xpad, u16 cmd, unsigned cha
 
 	/* Presence change */
 	if (data[0] & 0x08) {
-
 		present = (data[1] & 0x80) != 0;
 
 		if (xpad->pad_present != present) {
 			xpad->pad_present = present;
 			schedule_work(&xpad->work);
 		}
-
 	}
 
 	/* Valid pad data */
@@ -1239,7 +1233,6 @@ static int xpad_play_effect(struct input_dev *dev, void *data, struct ff_effect 
 	int retval;
 	unsigned long flags;
 
-
 	if (effect->type != FF_RUMBLE)
 		return 0;
 
@@ -1312,10 +1305,8 @@ static int xpad_play_effect(struct input_dev *dev, void *data, struct ff_effect 
 		dev_dbg(&xpad->dev->dev,
 			"%s - rumble command sent to unsupported xpad type: %d\n",
 			__func__, xpad->xtype);
-
 		retval = -EINVAL;
 		goto out;
-
 	}
 
 	retval = xpad_try_sending_next_out_packet(xpad);
@@ -1352,9 +1343,7 @@ struct xpad_led {
 };
 
 /**
-
  * set the LEDs on Xbox360 / Wireless Controllers
-
  * @param command
  *  0: off
  *  1: all blink, then previous setting
@@ -1410,11 +1399,9 @@ static void xpad_send_led_command(struct usb_xpad *xpad, int command)
 		break;
 	}
 
-
 	xpad_try_sending_next_out_packet(xpad);
 
 	spin_unlock_irqrestore(&xpad->odata_lock, flags);
-
 }
 
 /*
@@ -1437,7 +1424,6 @@ static void xpad_led_set(struct led_classdev *led_cdev,
 
 static int xpad_led_probe(struct usb_xpad *xpad)
 {
-
 	struct xpad_led *led;
 	struct led_classdev *led_cdev;
 	int error;
@@ -1449,7 +1435,6 @@ static int xpad_led_probe(struct usb_xpad *xpad)
 	if (!led)
 		return -ENOMEM;
 
-
 	xpad->pad_nr = ida_simple_get(&xpad_pad_seq, 0, 0, GFP_KERNEL);
 	if (xpad->pad_nr < 0) {
 		error = xpad->pad_nr;
@@ -1457,7 +1442,6 @@ static int xpad_led_probe(struct usb_xpad *xpad)
 	}
 
 	snprintf(led->name, sizeof(led->name), "xpad%d", xpad->pad_nr);
-
 	led->xpad = xpad;
 
 	led_cdev = &led->led_cdev;
@@ -1469,10 +1453,7 @@ static int xpad_led_probe(struct usb_xpad *xpad)
 	if (error)
 		goto err_free_id;
 
-
 	xpad_identify_controller(xpad);
-
-
 
 	return 0;
 
@@ -1750,7 +1731,6 @@ static int xpad_probe(struct usb_interface *intf, const struct usb_device_id *id
 			break;
 	}
 
-
 	xpad = kzalloc(sizeof(struct usb_xpad), GFP_KERNEL);
 	if (!xpad)
 		return -ENOMEM;
@@ -1782,10 +1762,8 @@ static int xpad_probe(struct usb_interface *intf, const struct usb_device_id *id
 		if (intf->cur_altsetting->desc.bInterfaceClass == USB_CLASS_VENDOR_SPEC) {
 			if (intf->cur_altsetting->desc.bInterfaceProtocol == 129)
 				xpad->xtype = XTYPE_XBOX360W;
-
 			else if (intf->cur_altsetting->desc.bInterfaceProtocol == 208)
 				xpad->xtype = XTYPE_XBOXONE;
-
 			else
 				xpad->xtype = XTYPE_XBOX360;
 		} else {
@@ -1800,7 +1778,6 @@ static int xpad_probe(struct usb_interface *intf, const struct usb_device_id *id
 			xpad->mapping |= MAP_STICKS_TO_NULL;
 	}
 
-
 	if (xpad->xtype == XTYPE_XBOXONE &&
 	    intf->cur_altsetting->desc.bInterfaceNumber != 0) {
 		/*
@@ -1811,7 +1788,6 @@ static int xpad_probe(struct usb_interface *intf, const struct usb_device_id *id
 		error = -ENODEV;
 		goto err_free_in_urb;
 	}
-
 
 	ep_irq_in = ep_irq_out = NULL;
 
@@ -1829,7 +1805,6 @@ static int xpad_probe(struct usb_interface *intf, const struct usb_device_id *id
 
 	if (!ep_irq_in || !ep_irq_out) {
 		error = -ENODEV;
-
 		goto err_free_in_urb;
 	}
 
@@ -1846,7 +1821,6 @@ static int xpad_probe(struct usb_interface *intf, const struct usb_device_id *id
 
 	usb_set_intfdata(intf, xpad);
 
-
 	if (xpad->xtype == XTYPE_XBOX360W) {
 		/*
 		 * Submit the int URB immediately rather than waiting for open
@@ -1857,7 +1831,6 @@ static int xpad_probe(struct usb_interface *intf, const struct usb_device_id *id
 		 */
 		error = xpad360w_start_input(xpad);
 		if (error)
-
 			goto err_deinit_output;
 		/*
 		 * Wireless controllers require RESET_RESUME to work properly
@@ -1881,7 +1854,6 @@ err_free_in_urb:
 err_free_idata:
 	usb_free_coherent(udev, XPAD_PKT_LEN, xpad->idata, xpad->idata_dma);
 err_free_mem:
-
 	kfree(xpad);
 	return error;
 }
@@ -1986,3 +1958,4 @@ module_usb_driver(xpad_driver);
 MODULE_AUTHOR(DRIVER_AUTHOR);
 MODULE_DESCRIPTION(DRIVER_DESC);
 MODULE_LICENSE("GPL");
+

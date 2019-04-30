@@ -447,6 +447,9 @@ exit:
 	if (WARN_ON_ONCE(len >= sizeof(in_buffer)))
 		return -EIO;
 
+	if (WARN_ON_ONCE(len >= sizeof(in_buffer)))
+		return -EIO;
+
 	return simple_read_from_buffer(buffer, count, ppos, in_buffer, len);
 
 }

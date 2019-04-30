@@ -2030,9 +2030,7 @@ static inline void ufshcd_copy_sense_data(struct ufshcd_lrb *lrbp)
 
 		memcpy(lrbp->sense_buffer,
 			lrbp->ucd_rsp_ptr->sr.sense_data,
-
-			min_t(int, len_to_copy, SCSI_SENSE_BUFFERSIZE));
-
+			min_t(int, len_to_copy, UFSHCD_REQ_SENSE_SIZE));
 	}
 }
 
@@ -5475,6 +5473,8 @@ static void ufshcd_exception_event_handler(struct work_struct *work)
 	hba = container_of(work, struct ufs_hba, eeh_work);
 
 	pm_runtime_get_sync(hba->dev);
+	ufshcd_scsi_block_requests(hba);
+	scsi_block_requests(hba->host);
 
 	ufshcd_scsi_block_requests(hba);
 
@@ -5493,6 +5493,8 @@ static void ufshcd_exception_event_handler(struct work_struct *work)
 		ufshcd_bkops_exception_event_handler(hba);
 
 out:
+	ufshcd_scsi_unblock_requests(hba);
+	scsi_unblock_requests(hba->host);
 
 	ufshcd_scsi_unblock_requests(hba);
 
@@ -8337,9 +8339,9 @@ EXPORT_SYMBOL(ufshcd_system_suspend);
 
 int ufshcd_system_resume(struct ufs_hba *hba)
 {
+	int ret = 0;
+	ktime_t start = ktime_get();
 
-    	int ret = 0;
-	    ktime_t start = ktime_get();
 	if (!hba)
 		return -EINVAL;
 
@@ -8369,14 +8371,22 @@ EXPORT_SYMBOL(ufshcd_system_resume);
  */
 int ufshcd_runtime_suspend(struct ufs_hba *hba)
 {
+	int ret = 0;
+	ktime_t start = ktime_get();
 
 	if (!hba)
 		return -EINVAL;
 
 	if (!hba->is_powered)
-
-		return 0;
-
+		goto out;
+	else
+		ret = ufshcd_suspend(hba, UFS_RUNTIME_PM);
+out:
+	trace_ufshcd_runtime_suspend(dev_name(hba->dev), ret,
+		ktime_to_us(ktime_sub(ktime_get(), start)),
+		hba->curr_dev_pwr_mode,
+		hba->uic_link_state);
+	return ret;
 
 }
 EXPORT_SYMBOL(ufshcd_runtime_suspend);
@@ -8404,16 +8414,22 @@ EXPORT_SYMBOL(ufshcd_runtime_suspend);
  */
 int ufshcd_runtime_resume(struct ufs_hba *hba)
 {
+	int ret = 0;
+	ktime_t start = ktime_get();
 
 	if (!hba)
 		return -EINVAL;
 
 	if (!hba->is_powered)
-
-		return 0;
-
-	return ufshcd_resume(hba, UFS_RUNTIME_PM);
-
+		goto out;
+	else
+		ret = ufshcd_resume(hba, UFS_RUNTIME_PM);
+out:
+	trace_ufshcd_runtime_resume(dev_name(hba->dev), ret,
+		ktime_to_us(ktime_sub(ktime_get(), start)),
+		hba->curr_dev_pwr_mode,
+		hba->uic_link_state);
+	return ret;
 }
 EXPORT_SYMBOL(ufshcd_runtime_resume);
 
@@ -9010,16 +9026,17 @@ static int ufshcd_devfreq_target(struct device *dev,
 {
 	int ret = 0;
 	struct ufs_hba *hba = dev_get_drvdata(dev);
+	unsigned long irq_flags;
 	ktime_t start;
 	bool scale_up, sched_clk_scaling_suspend_work = false;
-	struct list_head *clk_list = &hba->clk_list_head;
-	struct ufs_clk_info *clki;
-	unsigned long irq_flags;
-
 
 	if (!ufshcd_is_clkscaling_supported(hba))
 		return -EINVAL;
 
+	if ((*freq > 0) && (*freq < UINT_MAX)) {
+		dev_err(hba->dev, "%s: invalid freq = %lu\n", __func__, *freq);
+		return -EINVAL;
+	}
 
 	spin_lock_irqsave(hba->host->host_lock, irq_flags);
 	if (ufshcd_eh_in_progress(hba)) {
@@ -9030,13 +9047,7 @@ static int ufshcd_devfreq_target(struct device *dev,
 	if (!hba->clk_scaling.active_reqs)
 		sched_clk_scaling_suspend_work = true;
 
-	if (list_empty(clk_list)) {
-		spin_unlock_irqrestore(hba->host->host_lock, irq_flags);
-		goto out;
-	}
-
-	clki = list_first_entry(&hba->clk_list_head, struct ufs_clk_info, list);
-	scale_up = (*freq == clki->max_freq) ? true : false;
+	scale_up = (*freq == UINT_MAX) ? true : false;
 	if (!ufshcd_is_devfreq_scaling_required(hba, scale_up)) {
 		spin_unlock_irqrestore(hba->host->host_lock, irq_flags);
 		ret = 0;
@@ -9046,7 +9057,6 @@ static int ufshcd_devfreq_target(struct device *dev,
 
 	start = ktime_get();
 	ret = ufshcd_devfreq_scale(hba, scale_up);
-
 	trace_ufshcd_profile_clk_scaling(dev_name(hba->dev),
 		(scale_up ? "up" : "down"),
 		ktime_to_us(ktime_sub(ktime_get(), start)), ret);

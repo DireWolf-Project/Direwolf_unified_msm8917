@@ -506,7 +506,6 @@ static int snd_compress_check_input(struct snd_compr_params *params)
 
 	    params->buffer.fragments > INT_MAX / params->buffer.fragment_size ||
 	    params->buffer.fragments == 0)
-
 		return -EINVAL;
 
 	/* now codec parameters */

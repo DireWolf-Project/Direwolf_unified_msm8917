@@ -2328,3 +2328,4 @@ DECLARE_USB_FUNCTION_INIT(uac2, afunc_alloc_inst, afunc_alloc);
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Yadwinder Singh");
 MODULE_AUTHOR("Jaswinder Singh");
+

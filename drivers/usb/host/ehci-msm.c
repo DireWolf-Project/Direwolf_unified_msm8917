@@ -103,7 +103,6 @@ static int ehci_msm_probe(struct platform_device *pdev)
 
 	ret = platform_get_irq(pdev, 0);
 	if (ret < 0) {
-
 		dev_err(&pdev->dev, "Unable to get IRQ resource\n");
 		goto put_hcd;
 	}

@@ -219,7 +219,6 @@ static char *kdb_read(char *buffer, size_t bufsize)
 	int key, buf_size, ret;
 
 
-
 	diag = kdbgetintenv("DTABCOUNT", &dtab_count);
 	if (diag)
 		dtab_count = 30;

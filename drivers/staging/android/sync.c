@@ -635,6 +635,9 @@ int sync_fence_wait(struct sync_fence *fence, long timeout)
 }
 EXPORT_SYMBOL(sync_fence_wait);
 
+
+
+
 static void sync_fence_free(struct kref *kref)
 {
 	struct sync_fence *fence = container_of(kref, struct sync_fence, kref);
@@ -643,6 +646,9 @@ static void sync_fence_free(struct kref *kref)
 
 	kfree(fence);
 }
+
+
+
 
 static int sync_fence_release(struct inode *inode, struct file *file)
 {

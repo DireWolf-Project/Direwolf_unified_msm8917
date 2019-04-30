@@ -1294,7 +1294,8 @@ static int proc_do_submiturb(struct usb_dev_state *ps, struct usbdevfs_urb *uurb
 	int i, ret, num_sgs = 0, ifnum = -1;
 	int number_of_packets = 0;
 	unsigned int stream_id = 0;
-void *buf;
+
+	void *buf;
 	bool is_in;
 	bool allow_short = false;
 	bool allow_zero = false;
